@@ -27,8 +27,7 @@ const JWKS = createRemoteJWKSet(
   new URL(`${process.env.CLIENT_URL}/api/auth/jwks`),
 );
 
-const logger = (req, res, next) => {
-  console.log(`${req.method} | ${req.url}`);
+const logger = (req, res, next) => {y
   next();
 };
 
@@ -116,6 +115,21 @@ async function run() {
       const result = await pets.find(query).toArray();
       res.send(result);
     });
+
+    // edit data by id
+    app.patch("/pets/:id", async(req, res) => {
+      'use server';
+      const id = req.params.id;
+      const updateData = req.body;
+      const filter = { _id: new ObjectId(id) };
+      const updateDoc = {
+        $set: {
+          ...updateData,
+        },
+      };
+      const result = await pets.updateOne(filter, updateDoc);
+      res.send(result);
+      });
 
     await client.db("admin").command({ ping: 1 });
     console.log(
