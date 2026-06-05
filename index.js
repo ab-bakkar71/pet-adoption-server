@@ -27,7 +27,7 @@ const JWKS = createRemoteJWKSet(
   new URL(`${process.env.CLIENT_URL}/api/auth/jwks`),
 );
 
-const logger = (req, res, next) => {y
+const logger = (req, res, next) => {
   next();
 };
 
@@ -60,6 +60,7 @@ async function run() {
     await client.connect();
     const database = client.db("pet-adoption");
     const pets = database.collection("pets");
+    const adoptionRequests = database.collection("adoption-requests");
 
     // send data on dataBase
 
@@ -71,7 +72,6 @@ async function run() {
         status: "available", // default status
         createdAt: new Date(),
       };
-      console.log("fontend data", petData);
       const result = await pets.insertOne(petData);
       res.send(result);
     });
@@ -117,8 +117,8 @@ async function run() {
     });
 
     // edit data by id
-    app.patch("/pets/:id", async(req, res) => {
-      'use server';
+    app.patch("/pets/:id", async (req, res) => {
+      "use server";
       const id = req.params.id;
       const updateData = req.body;
       const filter = { _id: new ObjectId(id) };
@@ -129,7 +129,24 @@ async function run() {
       };
       const result = await pets.updateOne(filter, updateDoc);
       res.send(result);
-      });
+    });
+
+    // adoption data
+    app.post("/adoption-request", async (req, res) => {
+      const adoptionData = req.body;
+      const result = await adoptionRequests.insertOne(adoptionData);
+      res.send(result);
+    });
+
+    // get adoption request by email
+    app.get("/adoption-requests/:email", async (req, res) => {
+      const email = req.params.email;
+      const query = { ownerEmail: email };
+      const result = await adoptionRequests.find(query).toArray();
+      res.send(result);
+    });
+
+    
 
     await client.db("admin").command({ ping: 1 });
     console.log(
