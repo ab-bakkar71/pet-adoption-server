@@ -146,7 +146,44 @@ async function run() {
       res.send(result);
     });
 
-    
+    // pet status change
+    app.patch("/adoption-request/:id", async (req, res) => {
+      const id = req.params.id;
+      const request = await adoptionRequests.findOne({
+        _id: new ObjectId(id),
+      });
+      await adoptionRequests.updateOne(
+        { _id: new ObjectId(id) },
+        {
+          $set: {
+            status: "accepted",
+          },
+        },
+      );
+      await pets.updateOne(
+        { _id: new ObjectId(request.petId) },
+        {
+          $set: {
+            status: "adopted",
+          },
+        },
+      );
+      await adoptionRequests.updateMany(
+        {
+          petId: request.petId,
+          _id: { $ne: new ObjectId(id) },
+          status: "pending",
+        },
+        {
+          $set: {
+            status: "rejected",
+          },
+        },
+      );
+      res.send({
+        success: true,
+      });
+    });
 
     await client.db("admin").command({ ping: 1 });
     console.log(
