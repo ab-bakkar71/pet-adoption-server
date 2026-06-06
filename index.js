@@ -138,13 +138,29 @@ async function run() {
       res.send(result);
     });
 
-    // get adoption request by email
-    app.get("/adoption-requests/:email", async (req, res) => {
-      const email = req.params.email;
-      const query = { ownerEmail: email };
-      const result = await adoptionRequests.find(query).toArray();
-      res.send(result);
-    });
+    // adoption request by id
+    app.get('/adoption-requests/pet/:petId', async(req, res) => {
+    const petId = req.params.petId;
+
+    const result = await adoptionRequests.find({
+        petId
+    }).toArray();
+
+    res.send(result);
+});
+
+// my adoption request by email
+app.get('/adoption-requests/user/:email', async(req, res) => {
+    const email = req.params.email;
+
+    const result = await adoptionRequests.find({
+        adopterEmail: email
+    }).toArray();
+
+    console.log(result);
+
+    res.send(result);
+});
 
     // pet status change
     app.patch("/adoption-request/:id", async (req, res) => {
