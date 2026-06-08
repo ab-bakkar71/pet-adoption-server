@@ -34,7 +34,7 @@ const logger = (req, res, next) => {
 const verifyToken = async (req, res, next) => {
   const { authorization } = req.headers;
   const token = authorization?.split(" ")[1];
-  console.log(token);
+  // console.log(token);
 
   if (!token) {
     return res.status(401).json({ message: "Unauthorize" });
@@ -45,9 +45,9 @@ const verifyToken = async (req, res, next) => {
       new URL("http://localhost:3000/api/auth/jwks"),
     );
     const { payload } = await jwtVerify(token, JWKS);
-    console.log(payload);
+    // console.log(payload);
     req.user = payload;
-    console.log("user", req.user);
+    // console.log("user", req.user);
     next();
   } catch (error) {
     console.error("Token validation failed:", error);
@@ -62,32 +62,52 @@ async function run() {
     const pets = database.collection("pets");
     const adoptionRequests = database.collection("adoption-requests");
 
-    // send data on dataBase
-
     app.post("/adopt", async (req, res) => {
       const adopt = req.body;
 
       const petData = {
         ...adopt,
-        status: "available", // default status
+        status: "available",
         createdAt: new Date(),
       };
       const result = await pets.insertOne(petData);
       res.send(result);
     });
 
-    // get all data
+    // get data by search all pet
     app.get("/pets", async (req, res) => {
       const { search } = req.query;
-      // let cursor;
-      // if(search){
-
-      //   cursor = pet.find({ title: search})
-      // }
-      const cursor = pets.find();
+      let cursor;
+      if (search) {
+        cursor = pets.find({
+          $or: [
+            { petName: { $regex: search, $options: "i" } },
+            { location: { $regex: search, $options: "i" } },
+            { breed: { $regex: search, $options: "i" } },
+          ],
+        });
+      } else {
+        cursor = pets.find();
+      }
       const results = await cursor.toArray();
-      res.json(results);
+      // console.log(results);
+      res.send(results);
     });
+
+    // filter data
+    app.get("/pets", async (req, res) => {
+  const { species } = req.query;
+
+  let query = {};
+
+  if (species && species !== "all") {
+    query.species = species;
+  }
+
+  const result = await pets.find(query).toArray();
+
+  res.send(result);
+});
 
     // for feature
 
@@ -103,6 +123,16 @@ async function run() {
       const query = { _id: new ObjectId(id) };
       const pet = await pets.findOne(query);
       res.send(pet);
+    });
+
+    // delete data by id
+    app.delete("/pets/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = {
+        _id: new ObjectId(id),
+      };
+      const result = await pets.deleteOne(query);
+      res.send(result);
     });
 
     // get data by email
@@ -139,28 +169,32 @@ async function run() {
     });
 
     // adoption request by id
-    app.get('/adoption-requests/pet/:petId', async(req, res) => {
-    const petId = req.params.petId;
+    app.get("/adoption-requests/pet/:petId", async (req, res) => {
+      const petId = req.params.petId;
 
-    const result = await adoptionRequests.find({
-        petId
-    }).toArray();
+      const result = await adoptionRequests
+        .find({
+          petId,
+        })
+        .toArray();
 
-    res.send(result);
-});
+      res.send(result);
+    });
 
-// my adoption request by email
-app.get('/adoption-requests/user/:email', async(req, res) => {
-    const email = req.params.email;
+    // my adoption request by email
+    app.get("/adoption-requests/user/:email", async (req, res) => {
+      const email = req.params.email;
 
-    const result = await adoptionRequests.find({
-        adopterEmail: email
-    }).toArray();
+      const result = await adoptionRequests
+        .find({
+          adopterEmail: email,
+        })
+        .toArray();
 
-    console.log(result);
+      // console.log(result);
 
-    res.send(result);
-});
+      res.send(result);
+    });
 
     // pet status change
     app.patch("/adoption-request/:id", async (req, res) => {
@@ -199,6 +233,21 @@ app.get('/adoption-requests/user/:email', async(req, res) => {
       res.send({
         success: true,
       });
+    });
+
+    // cancel adoption request
+
+    app.patch("/adoption-requests/user/:id", async (req, res) => {
+      const id = req.params.id;
+      const result = await adoptionRequests.updateOne(
+        { _id: new ObjectId(id) },
+        {
+          $set: {
+            status: "cancelled",
+          },
+        },
+      );
+      res.send(result);
     });
 
     await client.db("admin").command({ ping: 1 });
