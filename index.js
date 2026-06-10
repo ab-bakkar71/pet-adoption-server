@@ -34,7 +34,7 @@ const logger = (req, res, next) => {
 const verifyToken = async (req, res, next) => {
   const { authorization } = req.headers;
   const token = authorization?.split(" ")[1];
-  // console.log(token);
+  // console.log(token)
 
   if (!token) {
     return res.status(401).json({ message: "Unauthorize" });
@@ -57,7 +57,7 @@ const verifyToken = async (req, res, next) => {
 
 async function run() {
   try {
-    await client.connect();
+    // await client.connect();
     const database = client.db("pet-adoption");
     const pets = database.collection("pets");
     const adoptionRequests = database.collection("adoption-requests");
@@ -250,10 +250,10 @@ async function run() {
       res.send(result);
     });
 
-    await client.db("admin").command({ ping: 1 });
-    console.log(
-      "Pinged your deployment. You successfully connected to MongoDB!",
-    );
+    // await client.db("admin").command({ ping: 1 });
+    // console.log(
+    //   "Pinged your deployment. You successfully connected to MongoDB!",
+    // );
   } finally {
     // await client.close();
   }
@@ -261,5 +261,5 @@ async function run() {
 run().catch(console.dir);
 
 app.listen(port, () => {
-  console.log(`Example app listening on port ${port}`);
+  // console.log(`Example app listening on port ${port}`);
 });
